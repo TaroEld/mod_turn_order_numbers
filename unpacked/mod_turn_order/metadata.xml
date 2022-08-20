@@ -1,0 +1,12 @@
+<brush name="gfx/turn_order_numbers.png" version="17">
+  <sprite id="turnnumber_number_0" offsetY="106" ic="FF597AA9" width="35" height="50" img="numbers\turnnumber_number_0.png"/>
+  <sprite id="turnnumber_number_1" offsetY="106" ic="FF597AA9" width="35" height="50" img="numbers\turnnumber_number_1.png"/>
+  <sprite id="turnnumber_number_2" offsetY="106" ic="FF597AA9" width="35" height="50" img="numbers\turnnumber_number_2.png"/>
+  <sprite id="turnnumber_number_3" offsetY="106" ic="FF597AA9" width="35" height="50" img="numbers\turnnumber_number_3.png"/>
+  <sprite id="turnnumber_number_4" offsetY="106" ic="FF597AA9" width="35" height="50" img="numbers\turnnumber_number_4.png"/>
+  <sprite id="turnnumber_number_5" offsetY="106" ic="FF597AA9" width="35" height="50" img="numbers\turnnumber_number_5.png"/>
+  <sprite id="turnnumber_number_6" offsetY="106" ic="FF597AA9" width="35" height="50" img="numbers\turnnumber_number_6.png"/>
+  <sprite id="turnnumber_number_7" offsetY="106" ic="FF597AA9" width="35" height="50" img="numbers\turnnumber_number_7.png"/>
+  <sprite id="turnnumber_number_8" offsetY="106" ic="FF597AA9" width="35" height="50" img="numbers\turnnumber_number_8.png"/>
+  <sprite id="turnnumber_number_9" offsetY="106" ic="FF597AA9" width="35" height="50" img="numbers\turnnumber_number_9.png"/>
+ </brush>
