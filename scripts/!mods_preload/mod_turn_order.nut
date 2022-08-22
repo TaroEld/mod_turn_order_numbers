@@ -1,7 +1,7 @@
 ::TurnOrderNumbers <- {
 	ID = "mod_turn_order",
 	Name = "Turn Order Numbers",
-	Version = "1.0.2",
+	Version = "1.0.4",
 	NumbersColorPlayer = null,
 	NumbersColorAllies = null,
 	NumbersColorEnemies = null,
@@ -17,18 +17,19 @@
 	{
 		local asArray = split(_array, ",");
 		local red = format("%x", asArray[0].tointeger());
-		if (asArray[0].tointeger() < 10) red = "0" + red;
 		local green = format("%x", asArray[1].tointeger());
-		if (asArray[1].tointeger() < 10) green = "0" + green;
 		local blue = format("%x", asArray[2].tointeger());
-		if (asArray[2].tointeger() < 10) blue = "0" + blue;
-		local opacity = asArray[3] == "0.0" ? "00" : format("%x", (asArray[3].tofloat() * 255).tointeger());
+		local opacity = format("%x", (asArray[3].tofloat() * 255).tointeger());
+		if (red.len() == 1) red = "0" + red;
+		if (green.len() == 1) green = "0" + green;
+		if (blue.len() == 1) blue = "0" + blue;
+		if (opacity.len() == 1) opacity = "0" + opacity;
 		return  red + green + blue + opacity;
 	}
 }
 ::mods_registerMod(::TurnOrderNumbers.ID, ::TurnOrderNumbers.Version)
 
-::mods_queue(::TurnOrderNumbers.ID, "mod_msu", function()
+::mods_queue(::TurnOrderNumbers.ID, "mod_msu,>mod_autopilot", function()
 {
 	::TurnOrderNumbers.Mod <- ::MSU.Class.Mod(::TurnOrderNumbers.ID, ::TurnOrderNumbers.Version, ::TurnOrderNumbers.Name);
 	::TurnOrderNumbers.Mod.Keybinds.addSQKeybind("ToggleNumbers", "n", ::MSU.Key.State.Tactical, function(){
@@ -73,16 +74,16 @@
 	});
 
 	generalPage.addDivider("1");
-	local hoverNumberSetting = generalPage.addBooleanSetting("HoverNumbers", true, "Only show lower numbers on hover");
-	hoverNumberSetting.setDescription("When hovering over an entity, only those other entities who will act before it will have a number over their heads.")
+	local hoverNumberSetting = generalPage.addBooleanSetting("HoverNumbers", true, "Color lower numbers on hover");
+	hoverNumberSetting.setDescription("When hovering over an entity, the number of entities acting after it will be colored differently.")
 
-	local hoverColorSetting = generalPage.addColorPickerSetting("NumbersColorHover", hoverColor, "Hover color.");
-	hoverColorSetting.setDescription("When hovering over an entity, this is the color of the entities coming after it.");
+	local hoverColorSetting = generalPage.addColorPickerSetting("NumbersColorHover", hoverColor, "Hover color");
+	hoverColorSetting.setDescription("When hovering over an entity, this is the color of the entities acting after it.");
 	hoverColorSetting.addCallback(callback);
 	::TurnOrderNumbers.NumbersColorHover = this.createColor(::TurnOrderNumbers.GetValueAsHexString(hoverColor));
 
 
-	::mods_hookExactClass("ui/screens/tactical/modules/turn_sequence_bar/turn_sequence_bar", function(o)
+	::mods_hookNewObject("ui/screens/tactical/modules/turn_sequence_bar/turn_sequence_bar", function(o)
 	{
 		o.updateTurnOrderNumbers <- function()
 		{
@@ -93,15 +94,13 @@
 				if (!entity.hasSprite("number_left"))
 				{
 					entity.addSprite("number_left");
-					entity.setSpriteOffset("number_left", this.createVec(-10, 70))
 					entity.getSprite("number_left").Scale = 0.3;
-
+					entity.setSpriteOffset("number_left", this.createVec(-10, 70))
 				}
 
 				if (!entity.hasSprite("number_right"))
 				{
 					entity.addSprite("number_right");
-					entity.setSpriteOffset("number_right", this.createVec(10, 70))
 					entity.getSprite("number_right").Scale = 0.3;
 				}
 				entity.getSprite("number_left").Visible = false;
@@ -142,6 +141,11 @@
 					leftSprite.setBrush(format("turnnumber_number_%s", left.tochar()));
 					leftSprite.Color = color;
 					leftSprite.Visible = true;
+					entity.setSpriteOffset("number_right", this.createVec(10, 70))
+				}
+				else
+				{
+					entity.setSpriteOffset("number_right", this.createVec(0, 70))
 				}
 				rightSprite.setBrush(format("turnnumber_number_%s", right.tochar()));
 				rightSprite.Color = color;
@@ -180,6 +184,20 @@
 			mouseEnterTile(_x, _y, _entityId);
 			if (this.Tactical.isVisible() && ::TurnOrderNumbers.Mod.ModSettings.getSetting("HoverNumbers").getValue())
 				this.Tactical.TurnSequenceBar.updateTurnOrderNumbers();
+		}
+	})
+
+	::mods_hookExactClass("states/tactical_state", function(o)
+	{
+		local onBattleEnded = o.onBattleEnded;
+		o.onBattleEnded = function()
+		{
+			foreach(entity in this.World.getPlayerRoster().getAll())
+			{
+				entity.removeSprite("number_left");
+				entity.removeSprite("number_right");
+			}
+			return onBattleEnded();
 		}
 	})
 })
