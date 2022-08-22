@@ -11,7 +11,6 @@
 	{
 		this.NumbersEnabledState = !this.NumbersEnabledState;
 		this.Tactical.TurnSequenceBar.updateTurnOrderNumbers();
-		this.Tactical.TurnSequenceBar.updateTurnBarNumbers();
 	}
 	function GetValueAsHexString(_array)
 	{
@@ -42,7 +41,6 @@
 		if (this.Tactical.isVisible())
 		{
 			this.Tactical.TurnSequenceBar.updateTurnOrderNumbers();
-			this.Tactical.TurnSequenceBar.updateTurnBarNumbers();
 		}
 	}
 	local generalPage = ::TurnOrderNumbers.Mod.ModSettings.addPage("General");
@@ -69,7 +67,6 @@
 		if (this.Tactical.isVisible())
 		{
 			this.Tactical.TurnSequenceBar.updateTurnOrderNumbers();
-			this.Tactical.TurnSequenceBar.updateTurnBarNumbers();
 		}
 	});
 
@@ -107,6 +104,8 @@
 				entity.getSprite("number_right").Visible = false;
 				entity.setSpriteColorization("number_left", true);
 				entity.setSpriteColorization("number_right", true);
+				entity.setSpriteRenderToTexture("number_left", false);
+				entity.setSpriteRenderToTexture("number_right", false);
 
 			}
 
@@ -160,14 +159,6 @@
 			}
 		}
 
-		o.updateTurnBarNumbers <- function()
-		{
-			foreach(entity in this.getAllEntities())
-			{
-				entity.setDirty(true);
-			}
-		}
-
 		local initNextTurn = o.initNextTurn;
 		o.initNextTurn = function(_force = false)
 		{
@@ -198,6 +189,30 @@
 				entity.removeSprite("number_right");
 			}
 			return onBattleEnded();
+		}
+
+		local turnsequencebar_onEntityMouseEnter = o.turnsequencebar_onEntityMouseEnter;
+		o.turnsequencebar_onEntityMouseEnter = function(_entity)
+		{
+			if (_entity != null && _entity.isAlive())
+			{
+				_entity.getSprite("number_left").Visible = false;
+				_entity.getSprite("number_right").Visible = false;
+			}
+			return turnsequencebar_onEntityMouseEnter(_entity);
+		}
+
+		local turnsequencebar_onEntityMouseLeave = o.turnsequencebar_onEntityMouseLeave;
+		o.turnsequencebar_onEntityMouseLeave = function(_entity)
+		{
+			if (_entity != null && _entity.isAlive())
+			{
+				local turns = this.Tactical.TurnSequenceBar.getTurnsUntilActive(_entity.getID());
+				if (turns > 10)
+					_entity.getSprite("number_left").Visible = true;
+				_entity.getSprite("number_right").Visible = true;
+			}
+			return turnsequencebar_onEntityMouseLeave(_entity);
 		}
 	})
 })
