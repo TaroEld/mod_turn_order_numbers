@@ -1,7 +1,7 @@
 ::TurnOrderNumbers <- {
 	ID = "mod_turn_order",
 	Name = "Turn Order Numbers",
-	Version = "1.0.4",
+	Version = "1.0.5",
 	NumbersColorPlayer = null,
 	NumbersColorAllies = null,
 	NumbersColorEnemies = null,
