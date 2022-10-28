@@ -9,4 +9,5 @@
   <sprite id="turnnumber_number_7" offsetY="106" ic="FF597AA9" width="35" height="50" img="numbers\turnnumber_number_7.png"/>
   <sprite id="turnnumber_number_8" offsetY="106" ic="FF597AA9" width="35" height="50" img="numbers\turnnumber_number_8.png"/>
   <sprite id="turnnumber_number_9" offsetY="106" ic="FF597AA9" width="35" height="50" img="numbers\turnnumber_number_9.png"/>
+  <sprite id="turnnumber_asterisk" offsetY="106" ic="FF597AA9" width="35" height="50" img="numbers\turnnumber_asterisk.png"/>
  </brush>

@@ -6,11 +6,14 @@
 	NumbersColorAllies = null,
 	NumbersColorEnemies = null,
 	NumbersColorHover = null,
-	NumbersEnabledState = true,
-	function ToggleNumbersState()
+	function UpdateNumbers(_ = null)
 	{
-		this.NumbersEnabledState = !this.NumbersEnabledState;
-		this.Tactical.TurnSequenceBar.updateTurnOrderNumbers();
+		if (this.Tactical.isVisible())
+			this.Tactical.TurnSequenceBar.updateTurnOrderNumbers();
+	}
+	function getNumbersEnabledState()
+	{
+		return this.Mod.ModSettings.getSetting("EnabledState").getValue();
 	}
 	function GetValueAsHexString(_array)
 	{
@@ -31,34 +34,39 @@
 ::mods_queue(::TurnOrderNumbers.ID, "mod_msu,>mod_autopilot", function()
 {
 	::TurnOrderNumbers.Mod <- ::MSU.Class.Mod(::TurnOrderNumbers.ID, ::TurnOrderNumbers.Version, ::TurnOrderNumbers.Name);
-	::TurnOrderNumbers.Mod.Keybinds.addSQKeybind("ToggleNumbers", "n", ::MSU.Key.State.Tactical, function(){
-		::TurnOrderNumbers.ToggleNumbersState();
-	}, "Enable or disable turn order numbers.");
-
-	local callback = function(_newVal)
-	{
-		::TurnOrderNumbers[this.getID()] = this.createColor(::TurnOrderNumbers.GetValueAsHexString(_newVal));
-		if (this.Tactical.isVisible())
-		{
-			this.Tactical.TurnSequenceBar.updateTurnOrderNumbers();
-		}
-	}
 	local generalPage = ::TurnOrderNumbers.Mod.ModSettings.addPage("General");
+
+	// To enable and disable the numbers I use the setting itself with a further keybind
+	local enabledSetting = generalPage.addBooleanSetting("EnabledState", true, "Enable or disable numbers");
+	enabledSetting.addCallback(::TurnOrderNumbers.UpdateNumbers);
+
+	::TurnOrderNumbers.Mod.Keybinds.addSQKeybind("ToggleNumbers", "n", ::MSU.Key.State.Tactical, function(){
+		local setting = ::TurnOrderNumbers.Mod.ModSettings.getSetting("EnabledState");
+		setting.set(!setting.getValue(), true, false, false);
+		::TurnOrderNumbers.UpdateNumbers();
+	}, "Enable or disable turn order numbers.", ::MSU.Key.KeyState.Release);
+
+
 	local playerColor = "221,162,31,1.0";
 	local allyColor = "221,162,31,1.0";
 	local enemyColor =  "248,120,31,1.0";
 	local hoverColor = "255,0,0,1.0";
+	local colorCallback = function(_newVal)
+	{
+		::TurnOrderNumbers[this.getID()] = this.createColor(::TurnOrderNumbers.GetValueAsHexString(_newVal));
+		::TurnOrderNumbers.UpdateNumbers();
+	}
 
 	local playerColorSetting = generalPage.addColorPickerSetting("NumbersColorPlayer", playerColor, "Color of player numbers");
-	playerColorSetting.addCallback(callback);
+	playerColorSetting.addCallback(colorCallback);
 	::TurnOrderNumbers.NumbersColorPlayer = this.createColor(::TurnOrderNumbers.GetValueAsHexString(playerColor));
 
 	local allyColorSetting = generalPage.addColorPickerSetting("NumbersColorAllies", allyColor, "Color of ally numbers");
-	allyColorSetting.addCallback(callback);
+	allyColorSetting.addCallback(colorCallback);
 	::TurnOrderNumbers.NumbersColorAllies = this.createColor(::TurnOrderNumbers.GetValueAsHexString(allyColor));
 
 	local enemyColorSetting = generalPage.addColorPickerSetting("NumbersColorEnemies", enemyColor, "Color of enemy numbers");
-	enemyColorSetting.addCallback(callback);
+	enemyColorSetting.addCallback(colorCallback);
 	::TurnOrderNumbers.NumbersColorEnemies = this.createColor(::TurnOrderNumbers.GetValueAsHexString(enemyColor));
 
 	local scaleNumbersSetting = generalPage.addBooleanSetting("ScaleNumbers", true, "Increase size of lower numbers");
@@ -76,7 +84,11 @@
 
 	local hoverColorSetting = generalPage.addColorPickerSetting("NumbersColorHover", hoverColor, "Hover color");
 	hoverColorSetting.setDescription("When hovering over an entity, this is the color of the entities acting after it.");
-	hoverColorSetting.addCallback(callback);
+	hoverColorSetting.addCallback(colorCallback);
+
+	local fontSizeSetting = generalPage.addRangeSetting("NumbersFontSize", 100, 1, 200, 1, "Font Size", "Increase or reduce font size of the numbers, in %.");
+
+
 	::TurnOrderNumbers.NumbersColorHover = this.createColor(::TurnOrderNumbers.GetValueAsHexString(hoverColor));
 
 
@@ -100,16 +112,25 @@
 					entity.addSprite("number_right");
 					entity.getSprite("number_right").Scale = 0.3;
 				}
+				if (!entity.hasSprite("number_asterisk"))
+				{
+					entity.addSprite("number_asterisk");
+					entity.getSprite("number_asterisk").setBrush("turnnumber_asterisk");
+					entity.getSprite("number_asterisk").Scale = 0.3;
+				}
 				entity.getSprite("number_left").Visible = false;
 				entity.getSprite("number_right").Visible = false;
+				entity.getSprite("number_asterisk").Visible = false;
 				entity.setSpriteColorization("number_left", true);
 				entity.setSpriteColorization("number_right", true);
+				entity.setSpriteColorization("number_asterisk", true);
 				entity.setSpriteRenderToTexture("number_left", false);
 				entity.setSpriteRenderToTexture("number_right", false);
+				entity.setSpriteRenderToTexture("number_asterisk", false);
 
 			}
 
-			if (::TurnOrderNumbers.NumbersEnabledState == false)
+			if (::TurnOrderNumbers.getNumbersEnabledState() == false)
 				return;
 
 			foreach(idx, entity in this.getCurrentEntities())
@@ -129,11 +150,18 @@
 
 				local leftSprite = entity.getSprite("number_left");
 				local rightSprite = entity.getSprite("number_right");
+				local asterisk = entity.getSprite("number_asterisk");
 
 				local idxAsString = altIdx.tostring();
 				local left = altIdx > 9 ? idxAsString[0] : null;
 				local right = altIdx > 9 ? idxAsString[1] : idxAsString[0];
 
+
+				if (entity.m.IsWaitActionSpent)
+				{
+					asterisk.Color = color;
+					asterisk.Visible = true;
+				}
 
 				if (left != null)
 				{
@@ -141,19 +169,24 @@
 					leftSprite.Color = color;
 					leftSprite.Visible = true;
 					entity.setSpriteOffset("number_right", this.createVec(10, 70))
+					entity.setSpriteOffset("number_asterisk", this.createVec(28, 70))
 				}
 				else
 				{
 					entity.setSpriteOffset("number_right", this.createVec(0, 70))
+					entity.setSpriteOffset("number_asterisk", this.createVec(18, 70))
 				}
 				rightSprite.setBrush(format("turnnumber_number_%s", right.tochar()));
 				rightSprite.Color = color;
 				rightSprite.Visible = true;
 
+
 				// decreasing scale
 				local scale = 0.3;
 				if (::TurnOrderNumbers.Mod.ModSettings.getSetting("ScaleNumbers").getValue())
 					scale = ::Math.maxf(0.25, 0.4 - (0.01*altIdx));
+
+				scale *= (::TurnOrderNumbers.Mod.ModSettings.getSetting("NumbersFontSize").getValue() * 0.01);
 				rightSprite.Scale = scale;
 				leftSprite.Scale = scale;
 			}
